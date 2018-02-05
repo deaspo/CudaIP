@@ -1,0 +1,239 @@
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+//nucleia.pgm ascii
+//#define  n1 511//heigh of the image -1-rows
+//#define  n2 511  //width of the image -1-collumns
+
+//memb1.pgm -binary
+#define  n1 199   //heigh of the image -1-rows
+#define  n2 199  //width of the image -1-collumns
+
+
+#define  p  0
+
+typedef  int    array2D[n1+2*p+1][n2+2*p+1];//def new type array2D
+//we define new type array2d
+static array2D v, fs;//array for image
+
+int histogram[];
+
+FILE   *file;
+char   *name,*name_ending,*name_beg;//name=name_beg+name_ending
+//==============================================================================
+void rep(char c, int k);
+
+double  sqr(x)
+double x;
+{
+  return x*x;
+}
+//==============================================================================
+int min(a, b)
+int a, b;
+{
+  if (a<=b)
+    return a;
+  else
+    return b;
+}
+//==============================================================================
+int max(a, b)
+int a, b;
+{
+  if (a>=b)
+      return a;
+  else
+      return b;
+}
+//========loading pgm (greyscale) image, text format===================================
+void load_ascii()
+{int ll,i,j;
+ char pom1[5],line[80];
+
+  strcpy(name,name_beg);//construct a name of the file
+  sprintf(name_ending,".pgm");
+  strcat(name,name_ending);
+
+  file=fopen(name,"r");
+  if(file==NULL)
+    printf("The file was not found");
+ //reading the headers of the image
+     fgets(pom1,10,file);
+     do{
+          fgets(line,80,file);}
+     while(line[0]=='#');
+     fgets(line,10,file);
+
+  //reading the image data - ascii_format
+  for (i=p;i<=n1+p;i++)
+   for (j=p;j<=n2+p;j++)
+      {
+      fscanf(file,"%d",&ll);
+      v[i][j]=ll;
+      }
+
+  fclose(file);
+}
+//-------loading pgm (greyscale) image, binary format----
+void load_binary()
+{int ll,i,j;
+ char pom1[5],line[80];
+
+  strcpy(name,name_beg);//construct a name of the file
+  sprintf(name_ending,".pgm");
+  strcat(name,name_ending);
+
+  file=fopen(name,"rb");
+   if(file==NULL)
+    printf("The file was not found");
+
+    //reading the headers
+     fgets(pom1,10,file);
+     do{
+          fgets(line,80,file);}
+     while(line[0]=='#');
+     fgets(line,10,file);
+
+    //reading the image data- binary format
+  for (i=p;i<=n1+p;i++)
+   for (j=p;j<=n2+p;j++)
+      {
+      ll=getc(file);
+      v[i][j]=ll;
+      fs[i][j] = v[i][j];
+      }
+
+fclose(file);
+}
+//============================================================================
+//parameter O is the offset,
+//can be both negative and positive,
+//we must verify the saturation condition
+void intensity_offset(int O)
+{ int i,j;
+
+
+  for (i=p;i<=n1+p;i++)
+    for (j=p;j<=n2+p;j++)
+    {v[i][j]=v[i][j]+O;
+    if (v[i][j]>255)
+        v[i][j]=255;
+	if (v[i][j]<0)
+	    v[i][j]=0;
+	}
+}
+//=====content of v is written as an image in binary format=========================================
+void write_binary()
+{ int i,j;
+
+/* zapis binarny */
+  file=fopen(name,"wb");
+  fprintf(file,"P5\n");
+  fprintf(file,"%3d %3d\n",n2+1,n1+1);
+  fprintf(file,"255\n");
+  for (i=p;i<=n1+p;i++)
+    for (j=p;j<=n2+p;j++)
+      {
+       //putc(v[i][j],file);
+       putc(fs[i][j],file);
+      }
+  fclose(file);
+
+}
+//=====content of v is written as an image in ascii format=
+void write_ascii()
+{ int i,j;
+
+
+  file=fopen(name,"w");
+  fprintf(file,"P2\n");
+  fprintf(file,"%3d %3d\n",n2+1,n1+1);
+  fprintf(file,"255\n");
+  for (i=p;i<=n1+p;i++)
+    {for (j=p;j<=n2+p;j++)
+       fprintf(file,"%4d ",v[i][j]);
+    fprintf(file,"\n") ;
+    }
+  fclose(file);
+
+}
+//==============================================================================
+
+int main()
+{
+  int i,j, intensity;
+  name=(char*)malloc(50);
+  name_beg=(char*)malloc(20);
+  name_ending=(char*)malloc(30);
+
+  //prompt for a name without extension
+  printf("Just name without extension:\n");
+  scanf("%s",name_beg);
+  strcpy(name,name_beg);//copy name_beg to name
+
+  load_binary();// read file in binary format
+  //load_ascii();// read file in ascii format
+  intensity_offset(20);
+  for (i = 0; i < 256; i++)
+    {
+        histogram[i] = 0;
+    }
+
+
+  //populate the histogram
+  for (i=p;i<=n1+p;i++)
+    for (j=p;j<=n2+p;j++)
+    {
+        intensity = v[i][j];
+        histogram[intensity] = histogram[intensity] + 1;
+    }
+  printf("h(0):%d \n",histogram[2]);
+
+  int minimum = 0, maximum = 255;
+  while (histogram[minimum] == 0)
+    {
+        minimum++;
+    }
+  printf("The minimum intensity is %d: ", minimum);
+  while (histogram[maximum] == 0)
+    {
+        maximum--;
+    }
+  printf("The maximum intensity is %d: ", maximum);
+    //print out the histogram
+  int k;
+  /*for(k=0; k < 10; ++k) {
+    printf("%i:", k);
+    rep('*', histogram[k]);
+    printf("\n");
+  }*/
+
+  /*int prd, lset;
+  prd = (255-1)/(double)(maximum - minimum);
+  lset = -minimum*prd;
+  for (i=p;i<=n1+p;i++)
+    for (j=p;j<=n2+p;j++)
+    {
+        fs[i][j] = (int)(prd*fs[i][j] + lset + 0.5);
+    }*/
+
+
+  strcpy(name,name_beg);//create the new name
+  sprintf(name_ending,"_addoffset.pgm");
+  strcat(name,name_ending);
+
+  //write_ascii();// read file in ascii format
+ write_binary();// read file in binary format
+
+free((void*)name);
+}
+
+void rep(char c, int k) {
+  int i;
+  for(i = 0; i < k; i++) {
+    printf("%c", c);
+  }
+}

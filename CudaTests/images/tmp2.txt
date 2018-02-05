@@ -1,0 +1,49 @@
+/*determine pgm image type (only type three can be used)*/
+	ch = getc(tmp_file);
+	if (ch != 'P')
+	{
+		printf("ERROR(1): Not valid pgm/ppm file type\n");
+		exit(1);
+	}
+	ch = getc(tmp_file);
+	/*convert the one digit integer currently represented as a character to
+	an integer(48 == '0')*/
+	type = ch - 48;
+	if ((type != 2) && (type != 3) && (type != 5) && (type != 6))
+	{
+		printf("ERROR(2): Not valid pgm/ppm file type\n");
+		exit(1);
+	}
+
+	while (getc(tmp_file) != '\n');             /* skip to end of line*/
+
+	while (getc(tmp_file) == '#')              /* skip comment lines */
+	{
+		while (getc(tmp_file) != '\n');          /* skip to end of comment line */
+	}
+
+
+	/*there seems to be a difference between color and b/w.  This line is needed
+	by b/w but doesn't effect color reading...*/
+	fseek(tmp_file, -3, SEEK_CUR);             /* backup *three character*/
+
+	fscanf(tmp_file, "%d", &((*image).width));
+	fscanf(tmp_file, "%d", &((*image).height));
+	fscanf(tmp_file, "%d", &((*image).maxVal));
+	fclose(tmp_file);
+
+	
+
+	if (((*img).width  > MAX) || ((*img).height  > MAX))
+	{
+		printf("\n\n***ERROR - image too big for current image structure***\n\n");
+		exit(1);
+	}
+
+	/*reading the headers of the image
+	char pom1[5], line[80];
+	fgets(pom1, 10, in_file);
+	do {
+		fgets(line, 80, in_file);
+	} while (line[0] == '#');
+	fgets(line, 10, in_file);*/
